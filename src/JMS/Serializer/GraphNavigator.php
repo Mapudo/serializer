@@ -18,6 +18,7 @@
 
 namespace JMS\Serializer;
 
+use Doctrine\Common\Proxy\Proxy;
 use JMS\Serializer\EventDispatcher\ObjectEvent;
 use JMS\Serializer\EventDispatcher\PreDeserializeEvent;
 use JMS\Serializer\EventDispatcher\PreSerializeEvent;
@@ -117,12 +118,12 @@ final class GraphNavigator
                 $typeName = get_class($data);
             }
 
-            $type = array('name' => $typeName, 'params' => array());
+            $type = ['name' => $typeName, 'params' => []];
         }
         // If the data is null, we have to force the type to null regardless of the input in order to
         // guarantee correct handling of null values, and not have any internal auto-casting behavior.
         else if ($context instanceof SerializationContext && null === $data) {
-            $type = array('name' => 'NULL', 'params' => array());
+            $type = ['name' => 'NULL', 'params' => []];
         }
 
         switch ($type['name']) {
@@ -168,7 +169,8 @@ final class GraphNavigator
                     // metadata for the actual type of the object, not the base class.
                     if (class_exists($type['name'], false) || interface_exists($type['name'], false)) {
                         if (is_subclass_of($data, $type['name'], false)) {
-                            $type = array('name' => get_class($data), 'params' => array());
+                            $name = in_array(Proxy::class, class_implements($data), true) ? get_parent_class($data) : get_class($data);
+                            $type = ['name' => $name, 'params' => []];
                         }
                     }
                 } elseif ($context instanceof DeserializationContext) {

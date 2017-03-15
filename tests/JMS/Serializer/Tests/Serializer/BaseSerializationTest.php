@@ -22,6 +22,7 @@ use JMS\Serializer\Accessor\DefaultAccessorStrategy;
 use JMS\Serializer\Accessor\ExpressionAccessorStrategy;
 use JMS\Serializer\Context;
 use JMS\Serializer\DeserializationContext;
+use JMS\Serializer\EventDispatcher\EventSubscriberInterface;
 use JMS\Serializer\Exclusion\GroupsExclusionStrategy;
 use JMS\Serializer\Expression\ExpressionEvaluator;
 use JMS\Serializer\GraphNavigator;
@@ -1286,6 +1287,13 @@ abstract class BaseSerializationTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(new Order(new Price(12.34)), $deseralizedOrder);
         $this->assertAttributeInstanceOf('JMS\Serializer\Tests\Fixtures\Price', 'cost', $deseralizedOrder);
     }
+    public function testPostSerializeEvent()
+    {
+        $this->dispatcher->addSubscriber(new MockSubscriber());
+        $obj = new SimpleObject('foo', 'bar');
+        $this->serialize($obj);
+
+    }
 
     public function testObjectWithNullableArrays()
     {
@@ -1377,5 +1385,24 @@ abstract class BaseSerializationTest extends \PHPUnit_Framework_TestCase
         $ref = new \ReflectionProperty($obj, $name);
         $ref->setAccessible(true);
         $ref->setValue($obj, $value);
+    }
+}
+
+class MockSubscriber implements EventSubscriberInterface
+{
+    public static $events = array();
+
+    public static function getSubscribedEvents()
+    {
+        return [array(
+            'event'  => 'serializer.pre_serialize',
+            'method' => 'method',
+            'class'  => SimpleObject::class,
+        )];
+    }
+
+    public function method()
+    {
+        var_dump("Called");
     }
 }
